@@ -14,7 +14,7 @@
         :root {
             --accent: #4b6ef5;
             --accent-hover: #6382f7;
-            --accent-subtle: rgba(75, 110, 245, 0.15);
+            --accent-subtle: rgba(75, 110, 245, 0.12);
             --bg-base: #1a1d23;
             --bg-sidebar: #151820;
             --bg-sidebar-hover: #1e2230;
@@ -26,9 +26,8 @@
             --text-muted: #64748b;
             --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
-            --radius-sm: 4px;
-            --radius-md: 8px;
-            --radius-lg: 12px;
+            --sidebar-width: 280px;
+            --toc-width: 240px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -38,27 +37,25 @@
             background: var(--bg-base);
             color: var(--text-main);
             height: 100vh;
-            overflow: hidden;
             display: flex;
             line-height: 1.6;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Sidebar */
+        /* Navigace vlevo */
         .sidebar {
-            width: 280px;
+            width: var(--sidebar-width);
             background: var(--bg-sidebar);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
             z-index: 100;
-            transition: transform 0.3s ease;
         }
 
         .sidebar-header {
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
         }
 
         .site-logo {
@@ -68,23 +65,22 @@
             text-decoration: none;
             color: var(--text-main);
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
-        .search-container { padding: 0 1rem 1rem; }
-
+        .search-container { padding: 1rem; }
         #search {
             width: 100%;
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0,0,0,0.2);
             border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            padding: 0.6rem 0.8rem;
             color: var(--text-main);
             font-size: 0.85rem;
             outline: none;
+            transition: all 0.2s;
         }
-
-        #search:focus { border-color: var(--accent); }
+        #search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
 
         .nav-tree {
             flex: 1;
@@ -93,19 +89,17 @@
             list-style: none;
         }
 
-        .tree-node { list-style: none; margin-bottom: 2px; }
-
+        .tree-node { margin-bottom: 2px; }
         .tree-item {
             display: flex;
             align-items: center;
-            padding: 0.4rem 0.75rem;
-            border-radius: var(--radius-md);
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 0.875rem;
             color: var(--text-dim);
-            transition: all 0.15s ease;
+            transition: all 0.15s;
         }
-
         .tree-item:hover { background: var(--bg-sidebar-hover); color: var(--text-main); }
         .tree-item.active { background: var(--bg-sidebar-active); color: var(--accent); font-weight: 500; }
 
@@ -113,48 +107,124 @@
             width: 1.25rem;
             display: flex;
             align-items: center;
-            justify-content: center;
             margin-right: 0.25rem;
-            transition: transform 0.2s ease;
+            color: var(--text-muted);
+            transition: transform 0.2s;
         }
-
         .tree-node.open > .tree-item > .toggle { transform: rotate(90deg); }
-
         .children {
             display: none;
             padding-left: 1.25rem;
-            border-left: 1px solid var(--border);
             margin-left: 0.6rem;
+            border-left: 1px solid var(--border);
         }
-
         .tree-node.open > .children { display: block; }
 
-        /* Content Area */
+        /* Hlavní plocha */
+        .viewport {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
         .content-wrapper {
             flex: 1;
             overflow-y: auto;
-            background: var(--bg-base);
+            padding: 2rem;
             scroll-behavior: smooth;
         }
 
-        .content {
-            max-width: 840px;
+        .content-container {
+            max-width: 800px;
             margin: 0 auto;
-            padding: 5rem 2.5rem;
+            padding-bottom: 5rem;
         }
 
-        /* Markdown Styling */
-        .markdown-body { font-size: 1rem; color: var(--text-dim); }
-        .markdown-body h1 { font-size: 2.5rem; color: #fff; margin-bottom: 1.5rem; }
-        .markdown-body h2 { font-size: 1.75rem; color: #fff; margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.3rem; }
-        .markdown-body pre { background: var(--bg-code); padding: 1.5rem; border-radius: var(--radius-lg); margin: 1.5rem 0; border: 1px solid var(--border); overflow-x: auto; }
-        .markdown-body code { font-family: var(--font-mono); background: rgba(255,255,255,0.1); padding: 0.2rem 0.4rem; border-radius: var(--radius-sm); font-size: 0.85em; }
-        .markdown-body blockquote { border-left: 4px solid var(--accent); padding-left: 1.5rem; color: var(--text-main); font-style: italic; margin: 1.5rem 0; }
+        /* Drobečková navigace */
+        .breadcrumbs {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 0.5rem;
+        }
 
-        /* Loader */
-        .loader { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; }
-        .spinner { width: 2.5rem; height: 2.5rem; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Pravý panel - Obsah stránky (TOC) */
+        .toc-sidebar {
+            width: var(--toc-width);
+            padding: 4rem 1.5rem;
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        @media (max-width: 1200px) { .toc-sidebar { display: none; } }
+
+        .toc-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .toc-list { list-style: none; }
+        .toc-item {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: color 0.2s;
+            display: block;
+            text-decoration: none;
+        }
+        .toc-item:hover { color: var(--accent); }
+        .toc-item.h3 { padding-left: 1rem; font-size: 0.8rem; }
+
+        /* Markdown Styling */
+        .markdown-body h1 { font-size: 2.5rem; margin-bottom: 1rem; color: #fff; font-weight: 700; }
+        .markdown-body h2 { font-size: 1.6rem; margin: 2.5rem 0 1rem; color: #fff; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .markdown-body h3 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; color: #fff; }
+        .markdown-body p { margin-bottom: 1.25rem; color: var(--text-dim); line-height: 1.7; }
+        .markdown-body a { color: var(--accent); text-decoration: none; }
+        .markdown-body a:hover { text-decoration: underline; }
+
+        /* Kód s tlačítkem */
+        .code-wrap { position: relative; margin: 1.5rem 0; }
+        .copy-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            opacity: 0;
+        }
+        .code-wrap:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { background: var(--accent); color: white; }
+
+        .markdown-body pre {
+            background: var(--bg-code);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        .markdown-body code { font-family: var(--font-mono); font-size: 0.9em; background: rgba(255,255,255,0.08); padding: 0.2rem 0.4rem; border-radius: 4px; }
+        .markdown-body pre code { background: none; padding: 0; }
+
+        .markdown-body blockquote {
+            border-left: 4px solid var(--accent);
+            background: rgba(75, 110, 245, 0.05);
+            padding: 1rem 1.5rem;
+            margin: 2rem 0;
+            border-radius: 0 8px 8px 0;
+        }
 
         /* Mobile */
         #menu-toggle {
@@ -163,167 +233,185 @@
             bottom: 2rem; right: 2rem;
             width: 3.5rem; height: 3.5rem;
             background: var(--accent);
-            color: white; border-radius: 50%;
-            border: none; z-index: 1000;
-            cursor: pointer; font-size: 1.5rem;
+            color: white; border: none; border-radius: 50%;
+            z-index: 1000; cursor: pointer; font-size: 1.2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
         }
 
         @media (max-width: 768px) {
-            .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); }
+            .sidebar { position: fixed; transform: translateX(-100%); transition: 0.3s; height: 100%; }
             body.sidebar-open .sidebar { transform: translateX(0); }
             #menu-toggle { display: block; }
-            .content { padding: 3rem 1.5rem; }
         }
+
+        .loader { display: flex; justify-content: center; padding: 5rem; }
+        .spinner { width: 2rem; height: 2rem; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <button id="menu-toggle">☰</button>
-    
     <aside class="sidebar">
         <div class="sidebar-header">
             <a href="#" class="site-logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--accent)">
-                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                </svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
                 <span id="site-name">Dokumentace</span>
             </a>
         </div>
-        <div class="search-container">
-            <input type="text" id="search" placeholder="Hledat v dokumentech...">
-        </div>
+        <div class="search-container"><input type="text" id="search" placeholder="Hledat..."></div>
         <ul class="nav-tree" id="fileTree"></ul>
     </aside>
 
-    <div class="content-wrapper">
-        <main class="content markdown-body" id="content">
-            <div class="loader">
-                <div class="spinner"></div>
-                <p style="margin-top: 1rem; color: var(--text-muted);">Načítám...</p>
+    <div class="viewport">
+        <div class="content-wrapper" id="scroll-container">
+            <div class="content-container">
+                <div class="breadcrumbs" id="breadcrumbs"></div>
+                <main class="markdown-body" id="content">
+                    <div class="loader"><div class="spinner"></div></div>
+                </main>
             </div>
-        </main>
+        </div>
+        <aside class="toc-sidebar">
+            <div class="toc-title">Na této stránce</div>
+            <nav class="toc-list" id="toc-list"></nav>
+        </aside>
     </div>
 
     <script>
-        const CONFIG = {
-            owner: 'filipstrnad',
-            repo: 'blog-docs',
-            defaultFile: 'README.md'
-        };
+        const CONFIG = { owner: 'filipstrnad', repo: 'blog-docs', defaultFile: 'README.md' };
+        let OWNER = CONFIG.owner, REPO = CONFIG.repo;
 
-        const API_URL = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents`;
+        // Detekce prostředí
+        if (window.location.hostname.endsWith('.github.io')) {
+            OWNER = window.location.hostname.split('.')[0];
+            const parts = window.location.pathname.split('/').filter(p => p && !p.endsWith('.html'));
+            if (parts.length > 0) REPO = parts[0];
+            document.getElementById('site-name').textContent = REPO.charAt(0).toUpperCase() + REPO.slice(1);
+        }
 
-        // Marked.js options
-        marked.setOptions({
-            highlight: function(code, lang) {
-                const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-                return hljs.highlight(code, { language }).value;
-            },
-            langPrefix: 'hljs language-'
-        });
-
-        async function fetchPath(path = '') {
-            try {
-                const response = await fetch(`${API_URL}/${path}`);
-                if (!response.ok) throw new Error('GitHub API Error');
-                return await response.json();
-            } catch (err) {
-                console.error(err);
-                return null;
-            }
+        // GitHub API
+        async function fetchGH(path = '') {
+            const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`);
+            return res.ok ? await res.json() : [];
         }
 
         async function getTree(path = '') {
-            const items = await fetchPath(path);
-            if (!items || !Array.isArray(items)) return [];
-
-            const tree = [];
+            const items = await fetchGH(path);
+            const nodes = [];
             for (const item of items) {
                 if (item.type === 'dir') {
                     const children = await getTree(item.path);
-                    if (children.length > 0) {
-                        tree.push({ type: 'dir', name: item.name, path: item.path, children });
-                    }
+                    if (children.length > 0) nodes.push({ type: 'dir', name: item.name, path: item.path, children });
                 } else if (item.name.toLowerCase().endsWith('.md')) {
-                    tree.push({ 
-                        type: 'file', 
-                        name: item.name.replace(/\.md$/i, ''), 
-                        path: item.path, 
-                        url: item.download_url 
-                    });
+                    nodes.push({ type: 'file', name: item.name.replace(/\.md$/i, ''), path: item.path, url: item.download_url });
                 }
             }
-            return tree.sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === 'dir' ? -1 : 1));
+            return nodes.sort((a,b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === 'dir' ? -1 : 1));
         }
 
         function renderTree(nodes, container) {
             nodes.forEach(node => {
                 const li = document.createElement('li');
                 li.className = 'tree-node';
-
                 const item = document.createElement('div');
                 item.className = 'tree-item';
                 item.innerHTML = `
-                    <span class="toggle">${node.type === 'dir' ? '▸' : ''}</span>
+                    <span class="toggle">${node.type === 'dir' ? '▶' : ''}</span>
                     <span class="name">${node.name}</span>
                 `;
-
                 li.appendChild(item);
 
                 if (node.type === 'dir') {
-                    const childrenUl = document.createElement('ul');
-                    childrenUl.className = 'children';
-                    renderTree(node.children, childrenUl);
-                    li.appendChild(childrenUl);
-
+                    const childUl = document.createElement('ul');
+                    childUl.className = 'children';
+                    renderTree(node.children, childUl);
+                    li.appendChild(childUl);
                     item.onclick = () => li.classList.toggle('open');
                 } else {
                     item.onclick = () => {
                         document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
                         item.classList.add('active');
-                        loadFile(node.url, node.name);
+                        loadFile(node.url, node.path);
                         if (window.innerWidth <= 768) document.body.classList.remove('sidebar-open');
                     };
-                    item.setAttribute('data-url', node.url);
+                    item.dataset.path = node.path;
                 }
                 container.appendChild(li);
             });
         }
 
-        async function loadFile(url, title) {
-            const container = document.getElementById('content');
-            container.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
-
+        async function loadFile(url, path) {
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+            
             try {
                 const res = await fetch(url);
-                let text = await res.text();
+                const text = await res.text();
+                const title = path.split('/').pop().replace(/\.md$/i, '');
                 
-                // Pokud markdown obsahuje H1 se stejným názvem, nepíšeme ho znovu
-                const hasH1 = /^#\s+/m.test(text);
-                const htmlContent = marked.parse(text);
+                // Render Markdown
+                content.innerHTML = `<h1>${title}</h1>` + marked.parse(text);
                 
-                container.innerHTML = (hasH1 ? '' : `<h1>${title}</h1>`) + htmlContent;
-                
-                // Highlight code blocks
-                container.querySelectorAll('pre code').forEach(block => {
-                    hljs.highlightElement(block);
-                });
+                // Breadcrumbs
+                const parts = path.split('/');
+                document.getElementById('breadcrumbs').innerHTML = parts.map((p, i) => `<span>${p.replace(/\.md$/i,'')}</span>${i < parts.length-1 ? ' / ' : ''}`).join('');
 
-                document.querySelector('.content-wrapper').scrollTop = 0;
-            } catch (err) {
-                container.innerHTML = `<p style="color: #ef4444">Chyba: Obsah nelze načíst.</p>`;
+                // TOC & Highlights
+                generateTOC();
+                wrapCodeBlocks();
+                content.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+                document.getElementById('scroll-container').scrollTop = 0;
+            } catch (e) {
+                content.innerHTML = `<p style="color:red">Chyba: ${e.message}</p>`;
             }
         }
 
-        // Search logic
-        document.getElementById('search').oninput = (e) => {
-            const val = e.target.value.toLowerCase();
-            document.querySelectorAll('.tree-node').forEach(node => {
-                const name = node.querySelector('.name').textContent.toLowerCase();
-                const match = name.includes(val);
-                node.style.display = match || val === '' ? '' : 'none';
-                if (val !== '' && match) {
-                    let p = node.parentElement.closest('.tree-node');
+        function generateTOC() {
+            const toc = document.getElementById('toc-list');
+            toc.innerHTML = '';
+            const headings = document.querySelectorAll('#content h2, #content h3');
+            headings.forEach((h, i) => {
+                const id = 'h-' + i;
+                h.id = id;
+                const a = document.createElement('a');
+                a.className = `toc-item ${h.tagName.toLowerCase()}`;
+                a.textContent = h.textContent;
+                a.href = '#' + id;
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+                };
+                toc.appendChild(a);
+            });
+        }
+
+        function wrapCodeBlocks() {
+            document.querySelectorAll('pre').forEach(pre => {
+                const wrap = document.createElement('div');
+                wrap.className = 'code-wrap';
+                pre.parentNode.insertBefore(wrap, pre);
+                wrap.appendChild(pre);
+                
+                const btn = document.createElement('button');
+                btn.className = 'copy-btn';
+                btn.textContent = 'Kopírovat';
+                btn.onclick = () => {
+                    navigator.clipboard.writeText(pre.innerText);
+                    btn.textContent = 'Zkopírováno!';
+                    setTimeout(() => btn.textContent = 'Kopírovat', 2000);
+                };
+                wrap.appendChild(btn);
+            });
+        }
+
+        // Vyhledávání
+        document.getElementById('search').oninput = e => {
+            const q = e.target.value.toLowerCase();
+            document.querySelectorAll('.tree-node').forEach(n => {
+                const match = n.querySelector('.name').textContent.toLowerCase().includes(q);
+                n.style.display = match || q === '' ? '' : 'none';
+                if (q && match) {
+                    let p = n.parentElement.closest('.tree-node');
                     while(p) { p.classList.add('open'); p = p.parentElement.closest('.tree-node'); }
                 }
             });
@@ -332,23 +420,18 @@
         document.getElementById('menu-toggle').onclick = () => document.body.classList.toggle('sidebar-open');
 
         async function init() {
-            const tree = await getTree();
-            const container = document.getElementById('fileTree');
-            container.innerHTML = '';
-            renderTree(tree, container);
+            const tree = await getTree(CONFIG.rootPath);
+            renderTree(tree, document.getElementById('fileTree'));
+            
+            const first = (function find(list) {
+                for(let n of list) { if(n.type==='file') return n; if(n.children){const f=find(n.children); if(f) return f;} }
+            })(tree);
 
-            // Load default or first
-            const findFirst = (list) => {
-                for(let n of list) {
-                    if(n.type === 'file') return n;
-                    if(n.children) { const f = findFirst(n.children); if(f) return f; }
-                }
-            };
-
-            const first = findFirst(tree);
-            if (first) loadFile(first.url, first.name);
+            if (first) {
+                loadFile(first.url, first.path);
+                document.querySelector(`[data-path="${first.path}"]`)?.classList.add('active');
+            }
         }
-
         init();
     </script>
 </body>
