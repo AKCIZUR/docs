@@ -1,357 +1,1156 @@
 <!DOCTYPE html>
-<html lang="cs">
+<html lang="en" class="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dokumentace</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Motion Design 2026</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        accent: '#8b5cf6',
+                        darkBg: '#050505',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+        body {
+            background-color: #050505;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        ::selection {
+            background: #8b5cf6;
+            color: white;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8b5cf6;
+        }
 
-<script src="https://cdn.jsdelivr.net/npm/marked@16.4.1/lib/marked.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/highlight.min.js"></script>
+        .fluid-text {
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            text-transform: uppercase;
+            line-height: 0.85;
+        }
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/tokyo-night-dark.min.css">
+        #cursor {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+        }
+        #cursor-follower {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, border-color 0.3s;
+        }
+        #cursor-follower.hover {
+            width: 60px;
+            height: 60px;
+            border-color: #8b5cf6;
+        }
 
-<style>
-:root {
-    --accent: #6c8cff;
-    --accent-soft: rgba(108,140,255,0.15);
+        .grain-overlay {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: url("image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9990;
+            opacity: 0.3;
+            animation: grainShift 0.5s steps(1) infinite;
+        }
+        @keyframes grainShift {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-5%, -5%); }
+            50% { transform: translate(5%, 0); }
+            75% { transform: translate(-5%, 5%); }
+        }
 
-    --bg-base: #0f1117;
-    --bg-sidebar: #151821;
-    --bg-hover: rgba(255,255,255,0.05);
-    --bg-active: rgba(255,255,255,0.08);
+        .reveal-container {
+            overflow: hidden;
+            clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+            transition: clip-path 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+        .reveal-container.active {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        }
+        .reveal-text {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        .reveal-up {
+            opacity: 0;
+            transform: translateY(50px);
+        }
 
-    --border: rgba(255,255,255,0.08);
-    --border-strong: rgba(255,255,255,0.12);
+        .magnetic-wrap {
+            display: inline-block;
+            padding: 20px;
+            position: relative;
+        }
+        .magnetic-btn {
+            border-radius: 100px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .magnetic-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        .magnetic-btn:hover::before {
+            left: 100%;
+        }
+        .magnetic-btn:hover {
+            background: white;
+            color: black;
+            border-color: white;
+        }
 
-    --text-main: #e6eaf2;
-    --text-dim: #a8b0c0;
-    --text-muted: #6b7280;
+        .badge {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 9999px;
+            padding: 6px 16px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #8b5cf6;
+        }
 
-    --blur: blur(12px);
+        .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: marqueeScroll 20s linear infinite;
+        }
+        @keyframes marqueeScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
 
-    --sidebar-width: 280px;
-    --toc-width: 240px;
-}
+        .parallax-img {
+            will-change: transform;
+        }
 
-*{margin:0;padding:0;box-sizing:border-box;}
+        .glow-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+            width: 100%;
+            opacity: 0.3;
+        }
 
-body{
-    font-family:'Inter',system-ui;
-    background: radial-gradient(circle at 20% 20%, #1a1f2b, #0f1117 60%);
-    color:var(--text-main);
-    height:100vh;
-    display:flex;
-    overflow:hidden;
-}
+        .stat-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .stat-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: translateY(-5px);
+        }
 
-/* SIDEBAR */
-.sidebar{
-    width:var(--sidebar-width);
-    background:var(--bg-sidebar);
-    border-right:1px solid var(--border);
-    display:flex;
-    flex-direction:column;
-}
+        .nav-link {
+            position: relative;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: #8b5cf6;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
 
-.sidebar-header{
-    padding:1.5rem;
-    border-bottom:1px solid var(--border);
-}
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #050505;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .loading-bar {
+            width: 200px;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .loading-bar-fill {
+            width: 0%;
+            height: 100%;
+            background: #8b5cf6;
+            border-radius: 2px;
+        }
 
-.site-logo{
-    display:flex;
-    gap:0.6rem;
-    align-items:center;
-    color:#fff;
-    text-decoration:none;
-    font-weight:600;
-}
+        .horizontal-scroll {
+            display: flex;
+            gap: 24px;
+        }
+        .horizontal-scroll .card {
+            flex-shrink: 0;
+            width: 350px;
+        }
 
-/* SEARCH */
-.search-container{padding:1rem;}
+        .feature-line {
+            position: relative;
+            padding-left: 24px;
+        }
+        .feature-line::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 4px;
+            height: 4px;
+            background: #8b5cf6;
+            border-radius: 50%;
+        }
+        .feature-line::after {
+            content: '';
+            position: absolute;
+            left: 1px;
+            top: 14px;
+            width: 1px;
+            height: calc(100% - 6px);
+            background: linear-gradient(to bottom, #8b5cf6, transparent);
+            opacity: 0.2;
+        }
+        .feature-item:last-child .feature-line::after {
+            display: none;
+        }
 
-#search{
-    width:100%;
-    background:rgba(255,255,255,0.04);
-    backdrop-filter:var(--blur);
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:0.6rem;
-    color:#fff;
-}
-
-#search:focus{
-    outline:none;
-    border-color:var(--accent);
-    box-shadow:0 0 0 2px var(--accent-soft);
-}
-
-/* TREE */
-.nav-tree{
-    flex:1;
-    overflow-y:auto;
-    padding:0.5rem;
-    list-style:none;
-}
-
-.tree-node{margin-bottom:2px;}
-
-.tree-item{
-    display:flex;
-    align-items:center;
-    padding:0.5rem 0.75rem;
-    border-radius:8px;
-    cursor:pointer;
-    color:var(--text-dim);
-    font-size:0.875rem;
-}
-
-.tree-item:hover{
-    background:var(--bg-hover);
-    color:#fff;
-}
-
-.tree-item.active{
-    background:var(--bg-active);
-    border:1px solid var(--border-strong);
-    color:#fff;
-}
-
-.toggle{
-    width:1.25rem;
-    margin-right:0.25rem;
-    color:var(--text-muted);
-}
-
-.children{
-    display:none;
-    padding-left:1.25rem;
-    margin-left:0.6rem;
-    border-left:1px solid var(--border);
-}
-
-.tree-node.open>.children{display:block;}
-
-/* LAYOUT */
-.viewport{
-    flex:1;
-    display:flex;
-    overflow:hidden;
-}
-
-.content-wrapper{
-    flex:1;
-    overflow-y:auto;
-    padding:2rem;
-}
-
-.content-container{
-    max-width:800px;
-    margin:0 auto;
-}
-
-/* BREADCRUMBS */
-.breadcrumbs{
-    font-size:0.8rem;
-    color:var(--text-muted);
-    margin-bottom:2rem;
-}
-
-/* TOC */
-.toc-sidebar{
-    width:var(--toc-width);
-    padding:3rem 1rem;
-    border-left:1px solid var(--border);
-    overflow-y:auto;
-}
-
-@media(max-width:1200px){
-    .toc-sidebar{display:none;}
-}
-
-.toc-item{
-    display:block;
-    font-size:0.85rem;
-    color:var(--text-dim);
-    margin-bottom:0.5rem;
-    text-decoration:none;
-}
-
-.toc-item:hover{color:var(--accent);}
-
-/* MARKDOWN */
-.markdown-body h1{font-size:2.2rem;margin-bottom:2rem;}
-.markdown-body h2{margin-top:2rem;border-bottom:1px solid var(--border);padding-bottom:0.5rem;}
-.markdown-body p{color:var(--text-dim);}
-
-/* CODE */
-.code-wrap{position:relative;margin:1.5rem 0;}
-
-.copy-btn{
-    position:absolute;
-    top:0.5rem;
-    right:0.5rem;
-    background:rgba(255,255,255,0.05);
-    border:1px solid var(--border);
-    color:var(--text-muted);
-    padding:0.2rem 0.5rem;
-    border-radius:6px;
-    font-size:0.7rem;
-    cursor:pointer;
-    opacity:0;
-}
-
-.code-wrap:hover .copy-btn{opacity:1;}
-
-.markdown-body pre{
-    background:rgba(255,255,255,0.04);
-    backdrop-filter:var(--blur);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:1rem;
-}
-
-.markdown-body code{
-    font-family:'JetBrains Mono',monospace;
-}
-
-/* MOBILE */
-#menu-toggle{
-    display:none;
-    position:fixed;
-    bottom:2rem;
-    right:2rem;
-    width:3rem;
-    height:3rem;
-    border:none;
-    border-radius:50%;
-    background:var(--accent);
-    color:white;
-}
-
-@media(max-width:768px){
-    .sidebar{
-        position:fixed;
-        transform:translateX(-100%);
-        transition:.3s;
-        height:100%;
-    }
-    body.sidebar-open .sidebar{transform:translateX(0);}
-    #menu-toggle{display:block;}
-}
-
-/* LOADER */
-.loader{display:flex;justify-content:center;padding:5rem;}
-.spinner{
-    width:2rem;height:2rem;
-    border:2px solid var(--border);
-    border-top-color:var(--accent);
-    border-radius:50%;
-    animation:spin .6s linear infinite;
-}
-@keyframes spin{to{transform:rotate(360deg);}}
-</style>
+        @media (max-width: 768px) {
+            .fluid-text {
+                font-size: 15vw !important;
+            }
+            .horizontal-scroll {
+                flex-direction: column;
+            }
+            .horizontal-scroll .card {
+                width: 100%;
+            }
+            body {
+                cursor: auto;
+            }
+            #cursor, #cursor-follower {
+                display: none;
+            }
+            * {
+                cursor: auto;
+            }
+        }
+    </style>
 </head>
-
 <body>
-
-<button id="menu-toggle">☰</button>
-
-<aside class="sidebar">
-    <div class="sidebar-header">
-        <a href="#" class="site-logo">Dokumentace</a>
-    </div>
-    <div class="search-container">
-        <input id="search" placeholder="Hledat...">
-    </div>
-    <ul class="nav-tree" id="fileTree"></ul>
-</aside>
-
-<div class="viewport">
-    <div class="content-wrapper" id="scroll-container">
-        <div class="content-container">
-            <div class="breadcrumbs" id="breadcrumbs"></div>
-            <main class="markdown-body" id="content">
-                <div class="loader"><div class="spinner"></div></div>
-            </main>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="fluid-text text-2xl text-white/50 mb-4">Loading</div>
+        <div class="loading-bar">
+            <div class="loading-bar-fill" id="loading-bar-fill"></div>
         </div>
     </div>
 
-    <aside class="toc-sidebar">
-        <nav id="toc-list"></nav>
-    </aside>
-</div>
+    <!-- Custom Cursor -->
+    <div id="cursor"></div>
+    <div id="cursor-follower"></div>
 
-<script>
-const CONFIG = { owner:'filipstrnad', repo:'blog-docs', defaultFile:'README.md' };
+    <!-- Grain Overlay -->
+    <div class="grain-overlay"></div>
 
-async function fetchGH(path=''){
-    const res = await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${path}`);
-    return res.ok ? await res.json() : [];
-}
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 px-6 py-6 flex justify-between items-center mix-blend-difference" id="main-nav">
+        <div class="fluid-text text-xl text-white tracking-tight">
+            <span class="text-accent">EMD</span>
+        </div>
+        <div class="hidden md:flex gap-8 text-sm font-light text-white/80">
+            <a href="#about" class="nav-link hover:text-white transition-colors">About</a>
+            <a href="#work" class="nav-link hover:text-white transition-colors">Work</a>
+            <a href="#services" class="nav-link hover:text-white transition-colors">Services</a>
+            <a href="#contact" class="nav-link hover:text-white transition-colors">Contact</a>
+        </div>
+        <button class="md:hidden text-white" id="menu-toggle">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+    </nav>
 
-async function getTree(path=''){
-    const items = await fetchGH(path);
-    const nodes = [];
-    for(const item of items){
-        if(item.type==='dir'){
-            const children = await getTree(item.path);
-            if(children.length) nodes.push({type:'dir',name:item.name,path:item.path,children});
-        } else if(item.name.endsWith('.md')){
-            nodes.push({type:'file',name:item.name.replace(/\.md$/,''),path:item.path,url:item.download_url});
+    <!-- Mobile Menu -->
+    <div class="fixed inset-0 bg-darkBg z-40 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500" id="mobile-menu">
+        <div class="flex flex-col items-center gap-8 text-3xl font-light text-white">
+            <a href="#about" class="mobile-link hover:text-accent transition-colors">About</a>
+            <a href="#work" class="mobile-link hover:text-accent transition-colors">Work</a>
+            <a href="#services" class="mobile-link hover:text-accent transition-colors">Services</a>
+            <a href="#contact" class="mobile-link hover:text-accent transition-colors">Contact</a>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="h-screen flex items-center justify-center relative overflow-hidden" id="hero">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/10 rounded-full blur-[100px] animate-pulse"></div>
+            <div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px] animate-pulse" style="animation-delay: 0.5s"></div>
+        </div>
+        
+        <div class="relative z-10 flex flex-col items-center text-center px-6">
+            <div class="overflow-hidden mb-2">
+                <p class="text-sm uppercase tracking-[0.3em] text-accent font-medium" id="hero-label">Motion Design Studio</p>
+            </div>
+            <div class="overflow-hidden mb-4">
+                <h1 class="fluid-text text-[12vw] leading-none" id="hero-heading">
+                    Precision
+                </h1>
+            </div>
+            <p class="text-lg md:text-xl font-light text-gray-400 max-w-lg mb-10 opacity-0" id="hero-subheading">
+                Crafting immersive digital ecosystems that redefine the boundaries of motion and performance.
+            </p>
+            <div class="magnetic-wrap" id="magnetic-wrap">
+                <button class="magnetic-btn px-10 py-4 text-sm uppercase tracking-wider text-white border border-white/20 bg-white/5 backdrop-blur-md" id="hero-btn">
+                    Start Experience
+                </button>
+            </div>
+        </div>
+
+        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-0" id="scroll-hint">
+            <span class="text-xs uppercase tracking-widest text-gray-500">Scroll</span>
+            <div class="w-px h-12 bg-gradient-to-b from-gray-500 to-transparent"></div>
+        </div>
+
+        <div class="glow-line bottom-0 left-0"></div>
+    </section>
+
+    <!-- Marquee Section -->
+    <section class="py-16 overflow-hidden border-y border-white/5" id="marquee-section">
+        <div class="marquee-track">
+            <div class="flex items-center gap-8 px-8 whitespace-nowrap">
+                <span class="fluid-text text-6xl text-white/5">Motion</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">Design</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">WebGPU</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">Performance</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">Precision</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">Innovation</span>
+                <span class="text-accent text-2xl">◆</span>
+            </div>
+            <div class="flex items-center gap-8 px-8 whitespace-nowrap">
+                <span class="fluid-text text-6xl text-white/5">Motion</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">Design</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">WebGPU</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">Performance</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">Precision</span>
+                <span class="text-accent text-2xl">◆</span>
+                <span class="fluid-text text-6xl text-white/5">Innovation</span>
+                <span class="text-accent text-2xl">◆</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- About / Intro Section -->
+    <section class="py-32 px-6" id="about">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div class="order-2 lg:order-1">
+                <div class="reveal-container mb-8" id="about-img-container">
+                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=1000" 
+                         alt="Abstract digital art" 
+                         class="w-full h-[500px] object-cover grayscale hover:grayscale-0 transition-all duration-700 parallax-img"
+                         id="about-img">
+                </div>
+            </div>
+            <div class="order-1 lg:order-2">
+                <span class="badge mb-6 inline-block" id="about-badge">Who We Are</span>
+                <h2 class="fluid-text text-5xl md:text-6xl lg:text-7xl leading-none mb-6 reveal-text" id="about-heading">
+                    The New<br>Standard
+                </h2>
+                <p class="text-gray-400 font-light text-lg leading-relaxed mb-6 reveal-text" id="about-text">
+                    In 2026, performance is the new luxury. We combine WebGPU shaders with GSAP to ensure every pixel moves with intent and zero latency. Our approach merges art with engineering.
+                </p>
+                <p class="text-gray-500 font-light text-base leading-relaxed mb-8 reveal-text" id="about-text2">
+                    We don't just build websites—we craft digital experiences that breathe, react, and captivate. Every scroll tells a story.
+                </p>
+                <div class="flex gap-4 reveal-text" id="about-badges">
+                    <span class="badge">Performance</span>
+                    <span class="badge">Motion</span>
+                    <span class="badge">Design</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="py-32 px-6 bg-gradient-to-b from-transparent via-accent/5 to-transparent" id="stats">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-20">
+                <h2 class="fluid-text text-5xl md:text-6xl mb-4 reveal-text" id="stats-heading">Impact in Numbers</h2>
+                <p class="text-gray-400 font-light max-w-md mx-auto reveal-text" id="stats-subheading">
+                    Delivering measurable results through cutting-edge motion design.
+                </p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="stat-card rounded-2xl p-8 text-center reveal-up">
+                    <div class="fluid-text text-5xl text-accent mb-2" data-count="150">0</div>
+                    <div class="text-sm text-gray-500 uppercase tracking-wider">Projects</div>
+                </div>
+                <div class="stat-card rounded-2xl p-8 text-center reveal-up" style="transition-delay: 0.1s">
+                    <div class="fluid-text text-5xl text-accent mb-2" data-count="98">0</div>
+                    <div class="text-sm text-gray-500 uppercase tracking-wider">% Satisfaction</div>
+                </div>
+                <div class="stat-card rounded-2xl p-8 text-center reveal-up" style="transition-delay: 0.2s">
+                    <div class="fluid-text text-5xl text-accent mb-2" data-count="12">0</div>
+                    <div class="text-sm text-gray-500 uppercase tracking-wider">Awards</div>
+                </div>
+                <div class="stat-card rounded-2xl p-8 text-center reveal-up" style="transition-delay: 0.3s">
+                    <div class="fluid-text text-5xl text-accent mb-2" data-count="60">0</div>
+                    <div class="text-sm text-gray-500 uppercase tracking-wider">FPS Average</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Work Showcase Section -->
+    <section class="py-32 px-6" id="work">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex justify-between items-end mb-16">
+                <div>
+                    <span class="badge mb-4 inline-block">Selected Work</span>
+                    <h2 class="fluid-text text-5xl md:text-6xl reveal-text">Featured<br>Projects</h2>
+                </div>
+                <div class="hidden md:block reveal-text">
+                    <a href="#" class="text-gray-400 hover:text-accent transition-colors text-sm uppercase tracking-wider flex items-center gap-2">
+                        View All 
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Project 1 -->
+                <div class="group relative overflow-hidden rounded-2xl reveal-up">
+                    <div class="aspect-[4/3] overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?auto=format&fit=crop&q=80&w=800" 
+                             alt="Project 1" 
+                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0">
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div class="absolute bottom-0 left-0 p-8 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                        <span class="text-accent text-sm uppercase tracking-wider">Branding</span>
+                        <h3 class="fluid-text text-2xl mt-1">Neon Dreams</h3>
+                    </div>
+                </div>
+
+                <!-- Project 2 -->
+                <div class="group relative overflow-hidden rounded-2xl reveal-up md:mt-20">
+                    <div class="aspect-[4/3] overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=800" 
+                             alt="Project 2" 
+                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0">
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div class="absolute bottom-0 left-0 p-8 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                        <span class="text-accent text-sm uppercase tracking-wider">Web Design</span>
+                        <h3 class="fluid-text text-2xl mt-1">Gradient Flow</h3>
+                    </div>
+                </div>
+
+                <!-- Project 3 -->
+                <div class="group relative overflow-hidden rounded-2xl reveal-up">
+                    <div class="aspect-[4/3] overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800" 
+                             alt="Project 3" 
+                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0">
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div class="absolute bottom-0 left-0 p-8 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                        <span class="text-accent text-sm uppercase tracking-wider">Motion</span>
+                        <h3 class="fluid-text text-2xl mt-1">Cyber Pulse</h3>
+                    </div>
+                </div>
+
+                <!-- Project 4 -->
+                <div class="group relative overflow-hidden rounded-2xl reveal-up md:mt-20">
+                    <div class="aspect-[4/3] overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1614851099511-773084f6911d?auto=format&fit=crop&q=80&w=800" 
+                             alt="Project 4" 
+                             class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0">
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div class="absolute bottom-0 left-0 p-8 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
+                        <span class="text-accent text-sm uppercase tracking-wider">3D</span>
+                        <h3 class="fluid-text text-2xl mt-1">Liquid Metal</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="py-32 px-6" id="services">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-20">
+                <div>
+                    <span class="badge mb-6 inline-block">What We Do</span>
+                    <h2 class="fluid-text text-5xl md:text-6xl leading-none mb-8 reveal-text">Services &<br>Expertise</h2>
+                    <p class="text-gray-400 font-light text-lg leading-relaxed reveal-text">
+                        We specialize in creating high-performance digital experiences that push the boundaries of what's possible on the web.
+                    </p>
+                </div>
+                <div class="flex flex-col gap-8" id="features-list">
+                    <div class="feature-item feature-line pl-6 reveal-up">
+                        <h3 class="text-xl font-medium mb-2">Motion Design</h3>
+                        <p class="text-gray-500 font-light">Micro-interactions, page transitions, and scroll-driven animations that bring interfaces to life.</p>
+                    </div>
+                    <div class="feature-item feature-line pl-6 reveal-up">
+                        <h3 class="text-xl font-medium mb-2">WebGPU Shaders</h3>
+                        <p class="text-gray-500 font-light">Custom GPU-accelerated visual effects that run smoothly at 60fps on modern browsers.</p>
+                    </div>
+                    <div class="feature-item feature-line pl-6 reveal-up">
+                        <h3 class="text-xl font-medium mb-2">3D Experiences</h3>
+                        <p class="text-gray-500 font-light">Immersive WebGL and Three.js environments that captivate and engage users.</p>
+                    </div>
+                    <div class="feature-item feature-line pl-6 reveal-up">
+                        <h3 class="text-xl font-medium mb-2">Performance Optimization</h3>
+                        <p class="text-gray-500 font-light">Ensuring every animation runs at buttery smooth framerates with zero jank.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Horizontal Scroll Showcase -->
+    <section class="py-32 overflow-hidden" id="horizontal-section">
+        <div class="px-6 mb-12 max-w-7xl mx-auto">
+            <span class="badge mb-6 inline-block">Horizontal Scroll</span>
+            <h2 class="fluid-text text-5xl md:text-6xl reveal-text">Explore<br>Our Work</h2>
+        </div>
+        <div class="horizontal-scroll px-6" id="horizontal-container">
+            <div class="card rounded-2xl overflow-hidden">
+                <div class="aspect-[3/4]">
+                    <img src="https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500">
+                </div>
+                <div class="p-6">
+                    <span class="text-accent text-xs uppercase tracking-wider">2025</span>
+                    <h3 class="text-lg font-medium mt-1">Abstract Visions</h3>
+                </div>
+            </div>
+            <div class="card rounded-2xl overflow-hidden">
+                <div class="aspect-[3/4]">
+                    <img src="https://images.unsplash.com/photo-1557672172-298e090bd0f1?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500">
+                </div>
+                <div class="p-6">
+                    <span class="text-accent text-xs uppercase tracking-wider">2025</span>
+                    <h3 class="text-lg font-medium mt-1">Color Theory</h3>
+                </div>
+            </div>
+            <div class="card rounded-2xl overflow-hidden">
+                <div class="aspect-[3/4]">
+                    <img src="https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500">
+                </div>
+                <div class="p-6">
+                    <span class="text-accent text-xs uppercase tracking-wider">2025</span>
+                    <h3 class="text-lg font-medium mt-1">Light Study</h3>
+                </div>
+            </div>
+            <div class="card rounded-2xl overflow-hidden">
+                <div class="aspect-[3/4]">
+                    <img src="https://images.unsplash.com/photo-1618172193622-ae2d025f4032?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500">
+                </div>
+                <div class="p-6">
+                    <span class="text-accent text-xs uppercase tracking-wider">2025</span>
+                    <h3 class="text-lg font-medium mt-1">Fluid Motion</h3>
+                </div>
+            </div>
+            <div class="card rounded-2xl overflow-hidden">
+                <div class="aspect-[3/4]">
+                    <img src="https://images.unsplash.com/photo-1633177317976-3f1bc4475799?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500">
+                </div>
+                <div class="p-6">
+                    <span class="text-accent text-xs uppercase tracking-wider">2025</span>
+                    <h3 class="text-lg font-medium mt-1">Neon Grid</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quote Section -->
+    <section class="py-32 px-6 relative" id="quote">
+        <div class="max-w-5xl mx-auto text-center">
+            <div class="text-accent text-8xl font-serif opacity-20 mb-8 reveal-text">"</div>
+            <blockquote class="fluid-text text-3xl md:text-5xl lg:text-6xl leading-tight mb-8 reveal-text" id="quote-text">
+                Design is not just what it looks like and feels like. Design is how it works.
+            </blockquote>
+            <div class="reveal-text">
+                <p class="text-gray-400 font-medium">Steve Jobs</p>
+                <p class="text-gray-600 text-sm mt-1">Co-founder, Apple Inc.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-32 px-6 relative overflow-hidden" id="contact">
+        <div class="absolute inset-0 z-0">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/10 rounded-full blur-[150px]"></div>
+        </div>
+        <div class="relative z-10 max-w-4xl mx-auto text-center">
+            <h2 class="fluid-text text-6xl md:text-8xl lg:text-9xl leading-none mb-8 reveal-text" id="cta-heading">
+                Let's Create<br>Together
+            </h2>
+            <p class="text-gray-400 font-light text-xl mb-12 reveal-text" id="cta-text">
+                Ready to elevate your digital presence? Let's build something extraordinary.
+            </p>
+            <div class="magnetic-wrap" id="magnetic-wrap-cta">
+                <button class="magnetic-btn px-14 py-5 text-base uppercase tracking-wider text-white border border-white/20 bg-white/5 backdrop-blur-md" id="cta-btn">
+                    Get in Touch
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <section class="min-h-[60vh] bg-zinc-100 flex items-center justify-center text-black relative overflow-hidden" id="footer">
+        <div class="glow-line top-0 left-0 bg-gradient-to-r from-transparent via-accent to-transparent opacity-50"></div>
+        <h2 class="fluid-text text-[15vw] leading-none" id="footer-text">
+            Future
+        </h2>
+    </section>
+
+    <!-- Bottom Footer -->
+    <footer class="bg-zinc-200 px-6 py-8">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="fluid-text text-lg text-black/80">
+                <span class="text-accent">EMD</span> © 2026
+            </div>
+            <div class="flex gap-8 text-sm text-black/50">
+                <a href="#" class="hover:text-black transition-colors">Twitter</a>
+                <a href="#" class="hover:text-black transition-colors">Dribbble</a>
+                <a href="#" class="hover:text-black transition-colors">GitHub</a>
+                <a href="#" class="hover:text-black transition-colors">LinkedIn</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Loading Screen
+        const loadingTl = gsap.timeline();
+        loadingTl.to('#loading-bar-fill', {
+            width: '100%',
+            duration: 1.5,
+            ease: 'power2.inOut',
+            onComplete: () => {
+                loadingTl.to('#loading-screen', {
+                    opacity: 0,
+                    duration: 0.5,
+                    onComplete: () => {
+                        document.getElementById('loading-screen').style.display = 'none';
+                        startAnimations();
+                    }
+                });
+            }
+        });
+
+        // Initialize Lenis
+        const lenis = new Lenis({
+            lerp: 0.1,
+            smoothWheel: true
+        });
+
+        function rafLoop(time) {
+            lenis.raf(time);
+            requestAnimationFrame(rafLoop);
         }
-    }
-    return nodes;
-}
+        requestAnimationFrame(rafLoop);
 
-function renderTree(nodes,container){
-    nodes.forEach(node=>{
-        const li=document.createElement('li');
-        li.className='tree-node';
+        lenis.on('scroll', ScrollTrigger.update);
 
-        const item=document.createElement('div');
-        item.className='tree-item';
-        item.innerHTML=`<span class="toggle">${node.type==='dir'?'▶':''}</span><span>${node.name}</span>`;
-        li.appendChild(item);
+        // Custom Cursor
+        const cursorEl = document.getElementById('cursor');
+        const followerEl = document.getElementById('cursor-follower');
 
-        if(node.type==='dir'){
-            const ul=document.createElement('ul');
-            ul.className='children';
-            renderTree(node.children,ul);
-            li.appendChild(ul);
-            item.onclick=()=>li.classList.toggle('open');
-        } else {
-            item.onclick=()=>{
-                document.querySelectorAll('.tree-item').forEach(i=>i.classList.remove('active'));
-                item.classList.add('active');
-                loadFile(node.url,node.path);
-            };
+        document.addEventListener('mousemove', (evt) => {
+            gsap.to(cursorEl, {
+                x: evt.clientX,
+                y: evt.clientY,
+                duration: 0.1
+            });
+            gsap.to(followerEl, {
+                x: evt.clientX,
+                y: evt.clientY,
+                duration: 0.3
+            });
+        });
+
+        // Hover effect on interactive elements
+        const hoverables = document.querySelectorAll('a, button, .magnetic-wrap, .group');
+        hoverables.forEach(el => {
+            el.addEventListener('mouseenter', () => followerEl.classList.add('hover'));
+            el.addEventListener('mouseleave', () => followerEl.classList.remove('hover'));
+        });
+
+        // Magnetic Button Effect
+        document.querySelectorAll('.magnetic-wrap').forEach(wrap => {
+            const btn = wrap.querySelector('button');
+            
+            wrap.addEventListener('mousemove', (evt) => {
+                const rect = wrap.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const offsetX = evt.clientX - centerX;
+                const offsetY = evt.clientY - centerY;
+
+                gsap.to(btn, {
+                    x: offsetX * 0.5,
+                    y: offsetY * 0.5,
+                    duration: 0.4,
+                    ease: 'power2.out'
+                });
+            });
+
+            wrap.addEventListener('mouseleave', () => {
+                gsap.to(btn, {
+                    x: 0,
+                    y: 0,
+                    duration: 0.6,
+                    ease: 'elastic.out(1, 0.3)'
+                });
+            });
+        });
+
+        // Mobile Menu
+        const menuToggle = document.getElementById('menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+        let menuOpen = false;
+
+        menuToggle.addEventListener('click', () => {
+            menuOpen = !menuOpen;
+            if (menuOpen) {
+                mobileMenu.style.pointerEvents = 'auto';
+                gsap.to(mobileMenu, { opacity: 1, duration: 0.3 });
+            } else {
+                gsap.to(mobileMenu, { 
+                    opacity: 0, 
+                    duration: 0.3, 
+                    onComplete: () => mobileMenu.style.pointerEvents = 'none' 
+                });
+            }
+        });
+
+        document.querySelectorAll('.mobile-link').forEach(link => {
+            link.addEventListener('click', () => {
+                menuOpen = false;
+                gsap.to(mobileMenu, { 
+                    opacity: 0, 
+                    duration: 0.3, 
+                    onComplete: () => mobileMenu.style.pointerEvents = 'none' 
+                });
+            });
+        });
+
+        function startAnimations() {
+            // Hero Entrance Animation
+            const heroTl = gsap.timeline();
+            heroTl.fromTo('#hero-label', {
+                opacity: 0,
+                y: 20
+            }, {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: 'expo.out'
+            });
+            
+            heroTl.fromTo('#hero-heading', {
+                yPercent: 100,
+                skewY: 7
+            }, {
+                yPercent: 0,
+                skewY: 0,
+                duration: 1.5,
+                ease: 'expo.out'
+            }, '-=0.5');
+
+            heroTl.fromTo('#hero-subheading', {
+                opacity: 0,
+                y: 30
+            }, {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: 'expo.out'
+            }, '-=0.7');
+
+            heroTl.fromTo('#hero-btn', {
+                opacity: 0,
+                y: 20
+            }, {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: 'expo.out'
+            }, '-=0.4');
+
+            heroTl.to('#scroll-hint', {
+                opacity: 1,
+                duration: 0.6
+            }, '-=0.2');
+
+            // Scroll Hint Parallax
+            gsap.to('#scroll-hint', {
+                y: 50,
+                opacity: 0,
+                scrollTrigger: {
+                    trigger: '#hero',
+                    start: 'top top',
+                    end: '30% top',
+                    scrub: true
+                }
+            });
+
+            // Hero Background Parallax
+            gsap.to('#hero > div:first-child', {
+                y: 100,
+                scrollTrigger: {
+                    trigger: '#hero',
+                    start: 'top top',
+                    end: 'bottom top',
+                    scrub: true
+                }
+            });
+
+            // Marquee Speed on Scroll
+            gsap.to('.marquee-track', {
+                xPercent: -30,
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: '#marquee-section',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: 1
+                }
+            });
+
+            // About Section
+            ScrollTrigger.create({
+                trigger: '#about-img-container',
+                start: 'top 80%',
+                onEnter: () => {
+                    document.getElementById('about-img-container').classList.add('active');
+                }
+            });
+
+            gsap.to('#about-img', {
+                yPercent: -10,
+                scrollTrigger: {
+                    trigger: '#about',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: true
+                }
+            });
+
+            // About Text Reveals
+            const aboutElements = ['#about-badge', '#about-heading', '#about-text', '#about-text2', '#about-badges'];
+            aboutElements.forEach((el, i) => {
+                gsap.to(el, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 90%'
+                    },
+                    delay: i * 0.1
+                });
+            });
+
+            // Stats Section
+            const statsElements = ['#stats-heading', '#stats-subheading'];
+            statsElements.forEach((el, i) => {
+                gsap.to(el, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 90%'
+                    },
+                    delay: i * 0.15
+                });
+            });
+
+            // Counter Animation
+            document.querySelectorAll('[data-count]').forEach(el => {
+                const target = parseInt(el.getAttribute('data-count'));
+                ScrollTrigger.create({
+                    trigger: el,
+                    start: 'top 90%',
+                    onEnter: () => {
+                        gsap.to(el, {
+                            innerText: target,
+                            duration: 1.5,
+                            ease: 'power2.out',
+                            snap: { innerText: 1 },
+                            onUpdate: function() {
+                                el.textContent = Math.round(parseFloat(el.textContent));
+                            }
+                        });
+                    },
+                    once: true
+                });
+            });
+
+            // Stat Cards Reveal
+            document.querySelectorAll('.stat-card').forEach((card, i) => {
+                gsap.to(card, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.6,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 90%'
+                    },
+                    delay: i * 0.1
+                });
+            });
+
+            // Work Section
+            document.querySelectorAll('#work .reveal-text').forEach(el => {
+                gsap.to(el, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 90%'
+                    }
+                });
+            });
+
+            document.querySelectorAll('#work .reveal-up').forEach((card, i) => {
+                gsap.to(card, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 90%'
+                    },
+                    delay: i * 0.15
+                });
+            });
+
+            // Services Section
+            gsap.to('#services .reveal-text', {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: 'power3.out',
+                stagger: 0.1,
+                scrollTrigger: {
+                    trigger: '#services',
+                    start: 'top 80%'
+                }
+            });
+
+            document.querySelectorAll('#features-list .reveal-up').forEach((item, i) => {
+                gsap.to(item, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.7,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: item,
+                        start: 'top 90%'
+                    },
+                    delay: i * 0.15
+                });
+            });
+
+            // Horizontal Scroll
+            const horizontalContainer = document.getElementById('horizontal-container');
+            const cards = horizontalContainer.querySelectorAll('.card');
+            const totalWidth = (cards.length * (350 + 24)) - window.innerWidth;
+
+            gsap.to(horizontalContainer, {
+                x: -totalWidth,
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: '#horizontal-section',
+                    start: 'top 20%',
+                    end: () => `+=${totalWidth}`,
+                    scrub: 1,
+                    pin: false,
+                    invalidateOnRefresh: true
+                }
+            });
+
+            // Quote Section
+            gsap.to('#quote-text', {
+                scale: 1.05,
+                scrollTrigger: {
+                    trigger: '#quote',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: true
+                }
+            });
+
+            document.querySelectorAll('#quote .reveal-text').forEach((el, i) => {
+                gsap.to(el, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 90%'
+                    },
+                    delay: i * 0.15
+                });
+            });
+
+            // CTA Section
+            gsap.to('#cta-heading', {
+                scale: 0.95,
+                scrollTrigger: {
+                    trigger: '#contact',
+                    start: 'top 80%',
+                    end: 'bottom top',
+                    scrub: true
+                }
+            });
+
+            document.querySelectorAll('#contact .reveal-text').forEach((el, i) => {
+                gsap.to(el, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 90%'
+                    },
+                    delay: i * 0.15
+                });
+            });
+
+            // CTA Background Glow
+            gsap.to('#contact > div:first-child > div', {
+                scale: 1.5,
+                scrollTrigger: {
+                    trigger: '#contact',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: true
+                }
+            });
+
+            // Footer Scale Animation
+            gsap.to('#footer-text', {
+                scale: 0.5,
+                opacity: 0.5,
+                letterSpacing: '0.2em',
+                scrollTrigger: {
+                    trigger: '#footer-text',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: true
+                }
+            });
         }
 
-        container.appendChild(li);
-    });
-}
-
-async function loadFile(url,path){
-    const el=document.getElementById('content');
-    el.innerHTML='<div class="loader"><div class="spinner"></div></div>';
-
-    const text=await fetch(url).then(r=>r.text());
-    el.innerHTML = `<h1>${path.split('/').pop().replace('.md','')}</h1>` + marked.parse(text);
-
-    document.getElementById('scroll-container').scrollTop=0;
-}
-
-document.getElementById('menu-toggle').onclick=()=>document.body.classList.toggle('sidebar-open');
-
-async function init(){
-    const tree=await getTree();
-    renderTree(tree,fileTree);
-}
-
-init();
-</script>
-
+        // Smooth anchor scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    lenis.scrollTo(target);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
+
