@@ -36,7 +36,6 @@
             letter-spacing: -0.01em;
         }
 
-        /* Velmi jemné pozadí */
         body::after {
             content: "";
             position: absolute;
@@ -46,7 +45,6 @@
             opacity: 0.4;
         }
 
-        /* Sidebar */
         .sidebar {
             width: var(--sidebar-width);
             background: var(--bg-glass);
@@ -107,11 +105,12 @@
         .tree-item:hover { color: #fff; background: rgba(255,255,255,0.03); }
         .tree-item.active { color: var(--accent); background: rgba(165, 180, 252, 0.06); }
 
-        .toggle { width: 1.2rem; font-size: 0.6rem; opacity: 0.3; }
+        .toggle { width: 1.2rem; font-size: 0.6rem; opacity: 0.3; transition: transform 0.2s; }
+        .tree-node.open > .tree-item > .toggle { transform: rotate(90deg); }
+        
         .children { display: none; padding-left: 0.8rem; border-left: 1px solid var(--border-subtle); margin-left: 0.6rem; }
         .tree-node.open > .children { display: block; }
 
-        /* Main Viewport */
         .viewport { flex: 1; overflow-y: auto; position: relative; scroll-behavior: smooth; }
 
         .content-container {
@@ -126,7 +125,6 @@
             margin-bottom: 3rem;
         }
 
-        /* Markdown */
         .markdown-body { font-size: 1rem; line-height: 1.7; }
         .markdown-body h1 { font-size: 2.25rem; color: #fff; margin-bottom: 2rem; font-weight: 600; }
         .markdown-body h2 { font-size: 1.4rem; color: #fff; margin: 3rem 0 1rem; font-weight: 500; }
@@ -143,7 +141,6 @@
         code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; color: var(--accent); }
         pre code { color: inherit; font-size: 0.9em; }
 
-        /* TOC */
         .toc-sidebar {
             position: fixed;
             top: 4rem;
@@ -156,7 +153,6 @@
         .toc-item { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.6rem; text-decoration: none; display: block; }
         .toc-item:hover { color: var(--accent); }
 
-        /* Loader */
         .loader { width: 20px; height: 20px; border: 2px solid var(--border-light); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -197,34 +193,49 @@
     <script>
         const CONFIG = { owner: 'filipstrnad', repo: 'blog-docs' };
 
+        // Pomocná funkce pro fetch z GitHub API
         async function fetchGH(path = '') {
             try {
                 const res = await fetch(`https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${path}`);
-                return res.ok ? await res.json() : null;
-            } catch { return null; }
+                if (!res.ok) {
+                    console.error(`GitHub API error: ${res.status}`);
+                    return null;
+                }
+                return await res.json();
+            } catch (err) {
+                console.error("Fetch error:", err);
+                return null;
+            }
         }
 
+        // Rekurzivní stavba stromu
         async function buildTree(path = '') {
             const items = await fetchGH(path);
-            if (!items) return [];
+            if (!items || !Array.isArray(items)) return [];
+            
             const nodes = [];
             for (const item of items) {
                 if (item.type === 'dir') {
-                    nodes.push({ type: 'dir', name: item.name, path: item.path, children: await buildTree(item.path) });
+                    // Ignorujeme skryté složky
+                    if (item.name.startsWith('.')) continue;
+                    const children = await buildTree(item.path);
+                    nodes.push({ type: 'dir', name: item.name, path: item.path, children });
                 } else if (item.name.toLowerCase().endsWith('.md')) {
                     nodes.push({ type: 'file', name: item.name.replace(/\.md$/i, ''), path: item.path, url: item.download_url });
                 }
             }
-            return nodes.sort((a, b) => a.type === 'dir' ? -1 : 1);
+            // Složky nahoru, pak soubory abecedně
+            return nodes.sort((a, b) => a.type === b.type ? a.name.localeCompare(b.name) : a.type === 'dir' ? -1 : 1);
         }
 
+        // Vykreslení stromu do DOM
         function renderTree(nodes, container) {
             nodes.forEach(node => {
                 const li = document.createElement('li');
                 li.className = 'tree-node';
                 const div = document.createElement('div');
                 div.className = 'tree-item';
-                div.innerHTML = `<span class="toggle">${node.type === 'dir' ? '▼' : ''}</span><span>${node.name}</span>`;
+                div.innerHTML = `<span class="toggle">${node.type === 'dir' ? '▶' : ''}</span><span>${node.name}</span>`;
                 li.appendChild(div);
 
                 if (node.type === 'dir') {
@@ -232,33 +243,43 @@
                     ul.className = 'children';
                     renderTree(node.children, ul);
                     li.appendChild(ul);
-                    div.onclick = () => li.classList.toggle('open');
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        li.classList.toggle('open');
+                    };
                 } else {
-                    div.onclick = () => {
+                    div.onclick = (e) => {
+                        e.stopPropagation();
                         document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
                         div.classList.add('active');
                         loadFile(node.url, node.path);
                         if (window.innerWidth <= 768) document.body.classList.remove('sidebar-open');
                     };
                     div.dataset.path = node.path;
+                    div.dataset.url = node.url;
                 }
                 container.appendChild(li);
             });
         }
 
+        // Načtení konkrétního souboru
         async function loadFile(url, path) {
             const content = document.getElementById('content');
             content.innerHTML = '<div style="display:flex; justify-content:center; padding-top: 4rem;"><div class="loader"></div></div>';
+            
             try {
                 const res = await fetch(url);
+                if (!res.ok) throw new Error("Nelze načíst obsah souboru.");
                 const text = await res.text();
+                
+                // Převod markdownu
                 content.innerHTML = marked.parse(text);
                 
                 // Breadcrumbs
                 const parts = path.split('/');
-                document.getElementById('breadcrumbs').innerHTML = parts.join(' <span style="opacity:0.2">/</span> ');
+                document.getElementById('breadcrumbs').innerHTML = parts.map(p => p.replace(/\.md$/i, '')).join(' <span style="opacity:0.2">/</span> ');
 
-                // TOC
+                // Generování TOC (Obsahu)
                 const toc = document.getElementById('toc-list');
                 toc.innerHTML = '';
                 document.querySelectorAll('#content h2').forEach((h, i) => {
@@ -271,27 +292,77 @@
                     toc.appendChild(a);
                 });
 
+                // Highlight kódu
                 document.querySelectorAll('pre code').forEach(c => hljs.highlightElement(c));
+                
+                // Scroll nahoru
                 document.getElementById('scroll-container').scrollTop = 0;
-            } catch { content.innerHTML = '<p>Chyba při načítání.</p>'; }
+            } catch (err) {
+                content.innerHTML = `<p style="color: #f87171; padding: 2rem; text-align:center;">${err.message}</p>`;
+            }
         }
 
+        // Vyhledávání
         document.getElementById('search').oninput = e => {
             const q = e.target.value.toLowerCase();
             document.querySelectorAll('.tree-node').forEach(n => {
-                const match = n.innerText.toLowerCase().includes(q);
+                const text = n.querySelector('.tree-item span:last-child').textContent.toLowerCase();
+                const match = text.includes(q);
                 n.style.display = match ? '' : 'none';
-                if (q && match) n.classList.add('open');
+                if (q && match) {
+                    let parent = n.parentElement.closest('.tree-node');
+                    while(parent) { parent.classList.add('open'); parent = parent.parentElement.closest('.tree-node'); }
+                }
             });
         };
 
         document.getElementById('menu-toggle').onclick = () => document.body.classList.toggle('sidebar-open');
 
+        // Spuštění
         (async function init() {
             const tree = await buildTree();
-            renderTree(tree, document.getElementById('fileTree'));
-            const first = tree.find(n => n.type === 'file') || (tree[0]?.children?.find(n => n.type === 'file'));
-            if (first) loadFile(first.url, first.path);
+            const container = document.getElementById('fileTree');
+            container.innerHTML = '';
+            
+            if (tree.length === 0) {
+                document.getElementById('content').innerHTML = '<p style="text-align:center; opacity:0.5; padding-top:4rem;">V repozitáři nebyly nalezeny žádné .md soubory.</p>';
+                return;
+            }
+
+            renderTree(tree, container);
+
+            // Najít výchozí soubor (README nebo první soubor)
+            const findFirstFile = (nodes) => {
+                let readme = null;
+                let first = null;
+                
+                const traverse = (list) => {
+                    for (const n of list) {
+                        if (n.type === 'file') {
+                            if (!first) first = n;
+                            if (n.name.toLowerCase() === 'readme') readme = n;
+                        } else if (n.children) {
+                            traverse(n.children);
+                        }
+                        if (readme) break;
+                    }
+                };
+                
+                traverse(nodes);
+                return readme || first;
+            };
+
+            const start = findFirstFile(tree);
+            if (start) {
+                loadFile(start.url, start.path);
+                // Označit jako aktivní v menu
+                const activeItem = document.querySelector(`[data-url="${start.url}"]`);
+                if (activeItem) {
+                    activeItem.classList.add('active');
+                    let parent = activeItem.closest('.tree-node');
+                    while(parent) { parent.classList.add('open'); parent = parent.parentElement.closest('.tree-node'); }
+                }
+            }
         })();
     </script>
 </body>
