@@ -1,4 +1,5 @@
-#UsingHTML <!-- ... -->
+# UsingHTML
+<!-- ... -->
 
 An HTML comment is used to add explanatory notes to the markup or to prevent the browser from interpreting specific parts of the document.
 
