@@ -40,3 +40,5 @@ They can be used:
 
 ```html
 <!-- Comment -->
+<html></html>
+```
