@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{SITE_NAME}</title>
+    <title>Dokumentace</title>
     <script src="https://cdn.jsdelivr.net/npm/marked@16.4.1/lib/marked.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/highlight.min.js"></script>
     <link id="hljs-light" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/default.min.css">
@@ -26,7 +26,7 @@
         .tree-item{cursor:pointer;user-select:none;display:flex;align-items:center;padding:.5rem 1rem;transition:.2s;}
         .tree-item:hover{background:var(--hover);}
         .tree-item.active{background:var(--select);border-left:3px solid var(--primary);font-weight:500;}
-        .toggle{margin-right:.5rem;width:1rem;text-align:center;color:var(--toggle);transition:.2s;}
+        .toggle{margin-right:.5rem;width:1rem;text-align:center;color:var(--toggle);transition:.2s;font-size:0.8rem;}
         .name{flex:1;}
         .children{padding-left:1.5rem;display:none;}
         .tree-item.open > .children{display:block;}
@@ -41,11 +41,11 @@
 </head>
 <body>
     <header class="topbar">
-        <button id="menu-btn">Menu</button>
-        <h1 id="site-title">{SITE_NAME}</h1>
+        <button id="menu-btn">☰</button>
+        <h1 id="site-title">Dokumentace</h1>
         <div class="topbar-right">
             <input type="text" id="search" placeholder="Vyhledat...">
-            <button id="theme-toggle">Moon</button>
+            <button id="theme-toggle">🌙</button>
         </div>
     </header>
     <div class="overlay" id="overlay"></div>
@@ -62,56 +62,84 @@
     </div>
 
     <script>
-        // CONFIG
-        const OWNER = '{OWNER}';
-        const REPO = '{REPO}';
-        const BRANCH = '{BRANCH}';
-        const ROOT_PATH = '{ROOT}';
-        const SITE_NAME = '{SITE_NAME}';
-        const DEFAULT_FILE = '{DEFAULT_FILE}';
+        // --- KONFIGURACE A AUTOMATICKÁ DETEKCE ---
+        let OWNER = 'vlastnik'; // Fallback vlastník (pokud neběží na GitHub Pages)
+        let REPO = 'repozitar'; // Fallback repozitář
+        let ROOT_PATH = '';     // Cesta ke složce s Markdowny (prázdné = kořen)
+        let SITE_NAME = 'Dokumentace';
+        const DEFAULT_FILE = 'README.md';
 
+        // Pokus o automatickou detekci z adresy URL (pro GitHub Pages)
+        const host = window.location.hostname;
+        const path = window.location.pathname;
+
+        if (host.endsWith('.github.io')) {
+            OWNER = host.replace('.github.io', ''); // Vytažení username
+            
+            const pathSegments = path.split('/').filter(p => p && !p.endsWith('.html'));
+            // Získání repozitáře (první segment cesty)
+            REPO = pathSegments.length > 0 ? pathSegments[0] : host; 
+            
+            // Automatické generování hezkého názvu podle repozitáře (nahradí pomlčky mezerami)
+            SITE_NAME = REPO.charAt(0).toUpperCase() + REPO.slice(1).replace(/-/g, ' ');
+        }
+
+        // Nastavení hlaviček a nadpisů
         document.title = SITE_NAME;
         document.getElementById('site-title').textContent = SITE_NAME;
 
+        // GitHub API pro načítání stromu (není potřeba vědět větev, použije se výchozí)
         const API_BASE = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
-        const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;
         let tree = [];
 
-        async function fetchFiles(path = '') {
+        // --- NAČÍTÁNÍ SOUBORŮ ---
+        async function fetchFiles(targetPath = '') {
             try {
-                const url = ROOT_PATH ? `${API_BASE}/${ROOT_PATH}/${path}` : `${API_BASE}/${path}`;
-                const res = await fetch(`${url}?ref=${BRANCH}`);
+                // Bezpečné spojení ROOT_PATH a targetPath bez zdvojených lomítek
+                const fullPath = [ROOT_PATH, targetPath].filter(Boolean).join('/');
+                const url = fullPath ? `${API_BASE}/${fullPath}` : API_BASE;
+                
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
+                
                 return Array.isArray(data) ? data.filter(item => 
-                    item.type === 'file' && item.name.endsWith('.md') || item.type === 'dir'
+                    (item.type === 'file' && item.name.endsWith('.md')) || item.type === 'dir'
                 ).sort((a,b) => {
                     if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
                     return a.name.localeCompare(b.name);
                 }) : [];
-            } catch (e) { console.error(e); return []; }
+            } catch (e) { console.error('Chyba API:', e); return []; }
         }
 
-        async function buildTree(path = '', depth = 0) {
-            const items = await fetchFiles(path);
+        async function buildTree(targetPath = '', depth = 0) {
+            const items = await fetchFiles(targetPath);
             const nodes = [];
             for (const item of items) {
                 if (item.type === 'dir') {
                     const children = await buildTree(item.path, depth + 1);
                     nodes.push({ type: 'dir', name: item.name, path: item.path, children, depth, open: false });
                 } else {
-                    nodes.push({ type: 'file', name: item.name.replace('.md',''), path: item.path, depth });
+                    // API přímo vrací download_url, což odstraňuje závislost na větvi
+                    nodes.push({ type: 'file', name: item.name.replace('.md',''), path: item.path, download_url: item.download_url, depth });
                 }
             }
             return nodes;
         }
 
+        // --- UI A VYKRESLOVÁNÍ ---
         function renderTree(nodes, parent) {
             nodes.forEach(node => {
                 const li = document.createElement('li');
                 li.className = 'tree-item';
                 if (node.type === 'dir') li.classList.add(node.open ? 'open' : 'collapsed');
-                const toggle = node.type === 'dir' ? `<span class="toggle">${node.open ? 'Down Arrow' : 'Right Arrow'}</span>` : '<span class="toggle"></span>';
-                li.innerHTML = `${toggle}<span class="name" data-path="${node.path}">${node.name}</span>`;
+                
+                // Místo textu použity Unicode šipky
+                const toggle = node.type === 'dir' ? `<span class="toggle">${node.open ? '▼' : '▶'}</span>` : '<span class="toggle"></span>';
+                
+                // Ukládáme si i download_url do data-atributu
+                li.innerHTML = `${toggle}<span class="name" data-path="${node.path}" data-url="${node.download_url || ''}">${node.name}</span>`;
+                
                 if (node.type === 'dir') {
                     const ul = document.createElement('ul');
                     ul.className = 'children';
@@ -126,42 +154,45 @@
             document.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
         }
 
-        async function loadFile(path) {
+        async function loadFile(path, downloadUrl) {
             const content = document.getElementById('content');
             content.innerHTML = `<div class="loading"><div class="spinner"></div><p>Načítám...</p></div>`;
             try {
-                const res = await fetch(`${RAW_BASE}/${path}`);
+                // Stahuje se přímo pomocí URL poskytnutého GitHub API
+                const res = await fetch(downloadUrl);
                 if (!res.ok) throw new Error();
                 const md = await res.text();
                 const title = path.split('/').pop().replace('.md', '');
                 content.innerHTML = `<h1 class="doc-title">${title}</h1>` + marked.parse(md, { gfm: true, breaks: false });
                 reHighlight();
                 content.scrollTop = 0;
+                
                 document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
                 document.querySelector(`[data-path="${path}"]`)?.closest('.tree-item')?.classList.add('active');
             } catch (e) {
-                content.innerHTML = `<div class="loading"><p>Chyba: ${path}</p></div>`;
+                content.innerHTML = `<div class="loading"><p>Chyba při načítání obsahu: ${path}</p></div>`;
             }
         }
 
-        // Theme
+        // --- TÉMATA A UDÁLOSTI ---
         let isDark = localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.body.classList.toggle('dark', isDark);
-        document.getElementById('theme-toggle').textContent = isDark ? 'Sun' : 'Moon';
+        document.getElementById('theme-toggle').textContent = isDark ? '☀️' : '🌙';
         const lightLink = document.getElementById('hljs-light');
         const darkLink = document.getElementById('hljs-dark');
+        
         function toggleTheme() {
             isDark = !isDark;
             document.body.classList.toggle('dark', isDark);
-            document.getElementById('theme-toggle').textContent = isDark ? 'Sun' : 'Moon';
+            document.getElementById('theme-toggle').textContent = isDark ? '☀️' : '🌙';
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
             lightLink.disabled = isDark;
             darkLink.disabled = !isDark;
             reHighlight();
         }
 
-        // Events
         document.getElementById('theme-toggle').onclick = toggleTheme;
+        
         document.getElementById('search').oninput = e => {
             const term = e.target.value.toLowerCase();
             document.querySelectorAll('.name').forEach(el => {
@@ -169,33 +200,43 @@
                 el.closest('.tree-item').style.display = show ? '' : 'none';
             });
         };
+        
         document.getElementById('menu-btn').onclick = () => document.body.classList.toggle('sidebar-open');
         document.getElementById('overlay').onclick = () => document.body.classList.remove('sidebar-open');
+        
         document.getElementById('fileTree').onclick = e => {
             const toggle = e.target.closest('.toggle');
             if (toggle && toggle.parentElement.classList.contains('tree-item')) {
                 const li = toggle.parentElement;
                 const open = li.classList.toggle('open');
                 li.classList.toggle('collapsed', !open);
-                toggle.textContent = open ? 'Down Arrow' : 'Right Arrow';
+                toggle.textContent = open ? '▼' : '▶';
                 return;
             }
             const name = e.target.closest('.name');
             if (name && name.dataset.path.endsWith('.md')) {
-                loadFile(name.dataset.path);
+                // Načtení využívá předuloženou URL
+                loadFile(name.dataset.path, name.dataset.url);
                 if (window.innerWidth < 768) document.body.classList.remove('sidebar-open');
             }
         };
 
-        // Init
+        // --- INICIALIZACE ---
         async function init() {
-            tree = await buildTree(ROOT_PATH);
+            tree = await buildTree('');
             const treeEl = document.getElementById('fileTree');
             renderTree(tree, treeEl);
+            
+            // Hledání výchozího souboru pro první zobrazení
             const defaultFile = tree.flatMap(n => n.type === 'file' ? [n] : n.children || []).find(f => f.path.toLowerCase().endsWith(DEFAULT_FILE.toLowerCase())) || 
                                tree.flatMap(n => n.type === 'file' ? [n] : n.children || [])[0];
-            if (defaultFile) loadFile(defaultFile.path);
+            if (defaultFile) {
+                loadFile(defaultFile.path, defaultFile.download_url);
+            } else {
+                document.getElementById('content').innerHTML = `<p style="padding: 2rem;">V repozitáři se nenašly žádné Markdown (.md) soubory.</p>`;
+            }
         }
+        
         init();
     </script>
 </body>
