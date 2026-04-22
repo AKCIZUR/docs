@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Docs</title>
 
+<!-- highlight.js (funkční CDN) -->
 <link rel="stylesheet"
-href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
+href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/github-dark.min.css">
 
 <style>
 body{margin:0;display:flex;font-family:sans-serif;background:#0f0f0f;color:#eee}
@@ -14,8 +15,7 @@ aside{width:280px;background:#151515;height:100vh;overflow:auto;padding:12px;bor
 main{flex:1;padding:32px;max-width:900px;margin:auto}
 .item{cursor:pointer;padding:4px 8px;border-radius:6px}
 .item:hover{background:#222}
-.folder{margin-left:10px}
-.file{margin-left:20px}
+.file{margin-left:16px}
 .active{background:#333}
 </style>
 </head>
@@ -23,28 +23,36 @@ main{flex:1;padding:32px;max-width:900px;margin:auto}
 <body>
 
 <aside id="menu"></aside>
-<main id="content">Loading...</main>
+<main id="content">Načítání...</main>
 
+<!-- knihovny -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 
 <script>
-const owner="filipstrnad";
-const repo="blog-docs";
+const owner = "AKCIZUR";
+const repo = "docs";
+const branch = "main";
 
-const menu=document.getElementById("menu");
-const content=document.getElementById("content");
+const menu = document.getElementById("menu");
+const content = document.getElementById("content");
 
-let treeData=[];
+let treeData = [];
 
-// 🔥 1 request místo stovek
+// 🔥 1 request (bez limit problémů)
 async function fetchTree(){
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`);
   const data = await res.json();
+
+  if(!data.tree){
+    content.innerHTML = "<h2>GitHub API chyba</h2><pre>"+JSON.stringify(data,null,2)+"</pre>";
+    return;
+  }
+
   treeData = data.tree.filter(i => i.path.endsWith(".md"));
 }
 
-// vytvoří fake strom z path
+// vytvoření stromu
 function buildTree(){
   const root = {};
 
@@ -63,6 +71,7 @@ function buildTree(){
   return root;
 }
 
+// render sidebar
 function renderTree(obj, container, level=0){
   for(const key in obj){
     const val = obj[key];
@@ -98,31 +107,52 @@ function renderTree(obj, container, level=0){
   }
 }
 
+// načtení MD
 async function loadFile(path){
-  if(!path) return;
+  if(!path){
+    content.innerHTML = "<h2>Vyber soubor vlevo</h2>";
+    return;
+  }
 
-  const url=`https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
-  const res=await fetch(url);
-  const md=await res.text();
+  try{
+    const url = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+    const res = await fetch(url);
+    const md = await res.text();
 
-  content.innerHTML=marked.parse(md);
+    content.innerHTML = marked.parse(md);
 
-  if(window.hljs) hljs.highlightAll();
+    if(window.hljs) hljs.highlightAll();
+
+    highlightActive(path);
+
+  }catch(e){
+    content.innerHTML = "<h2>Chyba načítání</h2>";
+  }
 }
 
+// aktivní položka
+function highlightActive(path){
+  document.querySelectorAll(".item").forEach(el=>{
+    el.classList.remove("active");
+    if(el.textContent.includes(path.split("/").pop())){
+      el.classList.add("active");
+    }
+  });
+}
+
+// routing
 function route(){
-  const path=location.hash.slice(1);
+  const path = location.hash.slice(1);
   loadFile(path);
 }
 
 window.addEventListener("hashchange", route);
 
+// init
 (async ()=>{
   await fetchTree();
-
   const tree = buildTree();
   renderTree(tree, menu);
-
   route();
 })();
 </script>
