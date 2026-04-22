@@ -1,151 +1,131 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Docs viewer</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docs</title>
 
-  <!-- Highlight.js CSS -->
-  <link id="hljs-theme" rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github-dark.min.css">
 
-  <style>
-    body {
-      margin: 0;
-      font-family: system-ui, sans-serif;
-      background: #0f0f0f;
-      color: #eaeaea;
-      display: flex;
-    }
-
-    aside {
-      width: 260px;
-      background: #151515;
-      padding: 16px;
-      border-right: 1px solid #222;
-      height: 100vh;
-      overflow-y: auto;
-    }
-
-    main {
-      flex: 1;
-      padding: 32px;
-      max-width: 900px;
-      margin: auto;
-    }
-
-    pre {
-      border-radius: 10px;
-      overflow: auto;
-      padding: 16px;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      background: #222;
-      color: white;
-      margin-bottom: 12px;
-    }
-
-    .item {
-      cursor: pointer;
-      padding: 6px 4px;
-      border-radius: 6px;
-    }
-
-    .item:hover {
-      background: #222;
-    }
-  </style>
+<style>
+body{margin:0;display:flex;font-family:sans-serif;background:#0f0f0f;color:#eee}
+aside{width:280px;background:#151515;height:100vh;overflow:auto;padding:12px;border-right:1px solid #222}
+main{flex:1;padding:32px;max-width:900px;margin:auto}
+.item{cursor:pointer;padding:4px 8px;border-radius:6px}
+.item:hover{background:#222}
+.folder{margin-left:10px}
+.file{margin-left:20px}
+.active{background:#333}
+</style>
 </head>
+
 <body>
 
-  <aside>
-    <input type="text" id="search" placeholder="Hledat..." />
-    <div id="menu"></div>
-  </aside>
+<aside id="menu"></aside>
+<main id="content">Loading...</main>
 
-  <main id="content">
-    <h1>Načítání...</h1>
-  </main>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/highlight.min.js"></script>
 
-  <!-- Highlight.js (PRIMARY) -->
-  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/highlight.min.js"></script>
+<script>
+const owner="filipstrnad";
+const repo="blog-docs";
 
-  <!-- Fallback pokud CDN failne -->
-  <script>
-    if (typeof hljs === "undefined") {
-      const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js";
-      document.head.appendChild(s);
-    }
-  </script>
+const menu=document.getElementById("menu");
+const content=document.getElementById("content");
 
-  <script>
-    const owner = "filipstrnad";
-    const repo = "blog-docs";
-    const path = "";
+let treeData=[];
 
-    const menu = document.getElementById("menu");
-    const content = document.getElementById("content");
-    const searchInput = document.getElementById("search");
+// 🔥 1 request místo stovek
+async function fetchTree(){
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/main?recursive=1`);
+  const data = await res.json();
+  treeData = data.tree.filter(i => i.path.endsWith(".md"));
+}
 
-    let files = [];
+// vytvoří fake strom z path
+function buildTree(){
+  const root = {};
 
-    async function fetchFiles() {
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`);
-      const data = await res.json();
+  treeData.forEach(file=>{
+    const parts = file.path.split("/");
+    let current = root;
 
-      files = data.filter(f => f.name.endsWith(".md"));
-      renderMenu(files);
-    }
-
-    function renderMenu(list) {
-      menu.innerHTML = "";
-      list.forEach(file => {
-        const div = document.createElement("div");
-        div.className = "item";
-        div.textContent = file.name;
-        div.onclick = () => loadFile(file.download_url);
-        menu.appendChild(div);
-      });
-    }
-
-    async function loadFile(url) {
-      const res = await fetch(url);
-      const text = await res.text();
-
-      content.innerHTML = marked.parse(text);
-
-      // highlight až když existuje hljs
-      waitForHLJS(() => {
-        hljs.highlightAll();
-      });
-    }
-
-    function waitForHLJS(cb) {
-      if (typeof hljs !== "undefined") {
-        cb();
-      } else {
-        setTimeout(() => waitForHLJS(cb), 50);
+    parts.forEach((part, i)=>{
+      if(!current[part]){
+        current[part] = (i === parts.length-1) ? file.path : {};
       }
-    }
-
-    searchInput.addEventListener("input", () => {
-      const val = searchInput.value.toLowerCase();
-      const filtered = files.filter(f => f.name.toLowerCase().includes(val));
-      renderMenu(filtered);
+      current = current[part];
     });
+  });
 
-    // Markdown parser (lightweight)
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/marked/marked.min.js";
-    script.onload = fetchFiles;
-    document.head.appendChild(script);
-  </script>
+  return root;
+}
+
+function renderTree(obj, container, level=0){
+  for(const key in obj){
+    const val = obj[key];
+
+    if(typeof val === "string"){
+      const div=document.createElement("div");
+      div.textContent="📄 "+key;
+      div.className="item file";
+      div.style.marginLeft = (level*12)+"px";
+
+      div.onclick=()=> location.hash = val;
+
+      container.appendChild(div);
+    } else {
+      const folder=document.createElement("div");
+      folder.textContent="📁 "+key;
+      folder.className="item";
+      folder.style.marginLeft = (level*12)+"px";
+
+      const children=document.createElement("div");
+      children.style.display="none";
+
+      folder.onclick=()=>{
+        children.style.display =
+          children.style.display==="none" ? "block" : "none";
+      };
+
+      container.appendChild(folder);
+      container.appendChild(children);
+
+      renderTree(val, children, level+1);
+    }
+  }
+}
+
+async function loadFile(path){
+  if(!path) return;
+
+  const url=`https://raw.githubusercontent.com/${owner}/${repo}/main/${path}`;
+  const res=await fetch(url);
+  const md=await res.text();
+
+  content.innerHTML=marked.parse(md);
+
+  if(window.hljs) hljs.highlightAll();
+}
+
+function route(){
+  const path=location.hash.slice(1);
+  loadFile(path);
+}
+
+window.addEventListener("hashchange", route);
+
+(async ()=>{
+  await fetchTree();
+
+  const tree = buildTree();
+  renderTree(tree, menu);
+
+  route();
+})();
+</script>
 
 </body>
 </html>
